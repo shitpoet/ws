@@ -492,6 +492,7 @@ function dirname(fn) {
 }
 
 let read = exports.read = function(fn) {
+  fn = require.resolve(fn)
   if (!fs.existsSync(fn)) {
     console.log(fn+' not found')
     process.exit()
