@@ -1,6 +1,6 @@
 const fs = require('fs')
 const vm = require('vm')
-const ffi = require('ffi')
+const ffi = require.main.require('ffi') // to work from electron
 
 let libskim = ffi.Library('/home/ors/lab/skim/libskim.so', {
   'read_and_rewrite': [ 'string', [ 'string', 'bool' ] ]
@@ -527,7 +527,7 @@ let load = exports.load = function(fn) {
   /*code += ';let exports = {};' + export_names.map(function(name) {
     return 'exports.'+name+'='+name
   }).join(';') + ';return exports'//*/
-  code = '(function(require,__dirname,__ctx){"use strict";'+code+'})';
+  code = '(function(require,__dirname,__ctx){with(__ctx){"use strict";'+code+'}})';
   let script = new vm.Script(code, {
     filename: fn, displayErrors: true
   })
