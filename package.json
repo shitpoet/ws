@@ -1,0 +1,6 @@
+{
+  "main": "ws.js",
+  "scripts": {
+    "testing": "test/f5"
+  }
+}
