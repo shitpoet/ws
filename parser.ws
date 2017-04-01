@@ -1643,6 +1643,7 @@ function unparse_stmnt(o, a) {
       }
       o.write(') ')
       unparse_stmnt(o, a.lhs)
+      o.write(';')
     } else if (op==DO) {
       o.write(op.s).write(' ')
       unparse_stmnt(o, a.lhs)

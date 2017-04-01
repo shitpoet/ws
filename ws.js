@@ -197,3 +197,7 @@ exports.require = function(fn) {
 // require is not good name cuz require of node.js has cache
 // and require of ws - does not
 exports.load = exports.require
+
+exports.replaceParser = function(new_parser) {
+  parser = new_parser
+}
