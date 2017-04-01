@@ -684,9 +684,10 @@ function posttokenize(toks) {
         if (
           (stmnt==GETTER || stmnt==SETTER) &&
           (
-            true /*  -- ohh i give up... we need contextual parsing here
+            //true /*  -- ohh i give up... we need contextual parsing here
             k.next.s == ':' || prev_nws.s == '.' ||
-            prev_nws.s == 'fun'*/
+            prev_nws.s == 'fun'
+            //*/
           ) ||
           (stmnt==CATCH) && (k.prev.s == '.')
         ) {
@@ -1612,6 +1613,10 @@ function unparse_stmnt(o, a) {
       if (a.lhs) {
         o.write(' ')
         unparse_expr(o, a.lhs, p)
+        o.write(';')
+
+      } else {
+        o.write(';')
       }
     } else if (a.op == IF) {
       o.write(op.s)
@@ -1642,6 +1647,7 @@ function unparse_stmnt(o, a) {
       }
       o.write(') ')
       unparse_stmnt(o, a.lhs)
+      o.write(';')
     } else if (op==DO) {
       o.write(op.s).write(' ')
       unparse_stmnt(o, a.lhs)

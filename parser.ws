@@ -684,9 +684,10 @@ function posttokenize(toks) {
         if (
           (stmnt==GETTER || stmnt==SETTER) &&
           (
-            true /*  -- ohh i give up... we need contextual parsing here
+            //true /*  -- ohh i give up... we need contextual parsing here
             k.next.s == ':' || prev_nws.s == '.' ||
-            prev_nws.s == 'fun'*/
+            prev_nws.s == 'fun'
+            //*/
           ) ||
           (stmnt==CATCH) && (k.prev.s == '.')
         ) {
