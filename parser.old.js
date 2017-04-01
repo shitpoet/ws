@@ -1613,10 +1613,6 @@ function unparse_stmnt(o, a) {
       if (a.lhs) {
         o.write(' ')
         unparse_expr(o, a.lhs, p)
-        o.write(';')
-
-      } else {
-        o.write(';')
       }
     } else if (a.op == IF) {
       o.write(op.s)
