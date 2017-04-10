@@ -3,6 +3,7 @@
 const fs = require('fs')
 const vm = require('vm')
 const path = require('path')
+const toker = require('../istok/toker')
 let parser = require('./parser')
 let {walk, walk_top} = require('./walk')
 
@@ -133,7 +134,7 @@ function wrap_code(code, before, after) {
   })
 }
 
-let read = exports.read = function(fn, opts) {
+function read(fn, opts) {
   opts = Object.assign({
     camelize: true,
     patch_exports: true,
@@ -159,6 +160,8 @@ let read = exports.read = function(fn, opts) {
   return {code, smap, export_names, ast}
 }
 
+exports.read = read
+
 function create_script(fn, code, smap) {
   let dfn = fn.replace(/\.ws$/,'.js')
   let script = new vm.Script(code, {
@@ -169,7 +172,7 @@ function create_script(fn, code, smap) {
   return script
 }
 
-let run = exports.run = function(fn) {
+let run = exports.run = function (fn) {
   let {code, smap, export_names} = read(fn)
   //code = '(function(require,__dirname){"use strict";'+code+'})';
   code = wrap_code(code,
@@ -179,7 +182,7 @@ let run = exports.run = function(fn) {
   return (script.runInThisContext()(require, path.dirname(fn)))
 }
 
-exports.require = function(fn) {
+function load(fn) {
   let {code, smap, export_names} = read(fn)
   /*code += ';let exports = {};' + export_names.map(function(name) {
     return 'exports.'+name+'='+name
@@ -194,9 +197,14 @@ exports.require = function(fn) {
   return exports
 }
 
+exports.load = load
+
 // require is not good name cuz require of node.js has cache
 // and require of ws - does not
-exports.load = exports.require
+exports.require = function(fn) {
+  log('ws.require is deprecated')
+  return load(fn)
+}
 
 exports.replaceParser = function(new_parser) {
   parser = new_parser
