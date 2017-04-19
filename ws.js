@@ -85,6 +85,7 @@ function patch_exports(a) {
   return export_names
 }
 
+//todo: move to parser or mod
 function camelize(a) {
   //log('camelize')
 
@@ -157,6 +158,7 @@ function read(fn, opts) {
   for (let exp_name of export_names) {
     code += `;__ctx.${exp_name} = ${exp_name};`
   }
+  log(code)
   return {code, smap, export_names, ast}
 }
 

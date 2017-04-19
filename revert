@@ -1,0 +1,4 @@
+#!/bin/bash
+scp parser.old.js parser.js
+cp parser.old.old.js parser.old.js
+mv parser.old.old.old.js parser.old.old.js

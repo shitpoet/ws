@@ -4,12 +4,25 @@
 // note  does not parse import declarations
 // note: does not parse object method shorthand syntax
 
-let assert = require('assert')
++include '../ubiq.ws'
+
+//const fs = require('fs')
+//const path = require('path')
+//let assert = require('assert')
 let colors = require('colors/safe')
+let {walk, walk_top} = require('./walk')
 //const ws = require('ws')
 module.exports.parse = parse
 module.exports.unparse = unparse
 //require('slowmod')
+
+
+fun merge(a, b)
+  let x = {}
+  Object.assign(x, a)
+  Object.assign(x, b)
+  return x
+
 //let {tokenize, TokStream} = require('../istok/istok.js')
 const {
   tt,
@@ -414,23 +427,28 @@ function parse_expr(s, e, a, bp, i) {
     // stop at dedent
     //log(k.line.indent, prev_indent)
     if (k.line.indent < prev_indent) return;
-    prev_indent = k.line.indent
 
     if ( // stop at nl when smth meaningful was already parsed
-      a.t && !(
-        a.t == nt.uop ||
-        a.t == nt.bop
-      ) &&
-      k.prev_nws &&
+      a.t && // last parsed node
+      //a.t != nt.uop &&
+      //a.t != nt.bop //&&
+      /*( // do not at bop if it is indented
+        a.t != nt.bop ||
+        k.line.indent <= prev_indent
+      ) &&*/
+      k.prev_nws && // prev tok is nl
       k.prev_nws.next &&
       k.prev_nws.next.t==tt.nl
     ) {
-      //log('a.t',a.t)
-      //log('end expr at nl')
+      /*log('end expr at nl with a', a.t, a.s)
+      if a.lhs log('lhs', a.lhs.s)
+      if a.rhs log('rhs', a.rhs.s)*/
       //dump_token(k.prev_nws)
       //dump_token(k)
       return;
     }
+
+    prev_indent = k.line.indent
 
     //log('parse loop');dump_token(k)
     if (k.ops) {
@@ -490,12 +508,12 @@ function parse_expr(s, e, a, bp, i) {
               if (op != COND) {
                 parse_expr(s, tmp, tmp, p, i);
               } else {
-                parse_expr(s, tmp, tmp, p-1, i)
+                parse_expr(s, tmp, tmp, p - 1, i)
                 s.skip(':')
                 a.cond = a.lhs;
                 a.lhs = a.rhs;
                 a.rhs = {}
-                parse_expr(s, a.rhs, a.rhs, p-1, i)
+                parse_expr(s, a.rhs, a.rhs, p - 1, i)
               }
             }
           } else { // ltr
@@ -610,6 +628,75 @@ function parse_if(s, a) {
   }
 }
 
+fun at_include(s)
+  if s.s=='+' && s.s2=='include'
+    ret true
+
+//todo: move to walk mod
+function unwrap_node(a) {
+  let pa = a.parent
+  for (let f of Object.keys(a)) {
+    pa[f] = a[f]
+  }
+}
+
+//todo: move to walk mod
+function walk_seq(a, cb) {
+  if (a.op && a.op.s==',') {
+    walk_seq(a.lhs, cb)
+    walk_seq(a.rhs, cb)
+  } else {
+    cb(a)
+  }
+}
+
+//todo: move to walk mod
+function strip-exports(a) {
+  let export_names = []
+
+  function cb(a) {
+    if (a.op && a.op.s == 'export') {
+      let lhs = a.lhs
+      //log(lhs.op)
+      let s = lhs.op.s
+      if (s=='let' || s=='var' || s=='const') {
+        walk_seq(lhs.lhs, function(a){
+          export_names.push(a.lhs.s)
+        })
+        unwrap_node(lhs)
+      } else if (s=='function') {
+        export_names.push(lhs.name)
+        unwrap_node(lhs)
+      } else {
+        throw new Error('bad export')
+      }
+    }
+  }
+
+  walk_top(a, cb)
+  return export_names
+}
+
+fun do_include(s, a, indent)
+  s.skip('+')
+  s.skip('include')
+  let ofn = s.t.fn
+  let dir = ofn.split('/').slice(0,-1).join('/')
+  if dir!='' dir = dir + '/'
+  let fn = dir + s.shift().ss
+  let ast = parse(fn, fs.readFileSync(fn, 'utf8'))
+  strip-exports(ast)
+  log('include '+fn)//, ast)
+  //camelize(ast)//////////////////
+  for (let key in ast)
+    a[key] = ast[key]
+  /*let n = a
+  while n.next n = n.next
+  n.next = {
+  }*/
+  log('a.next', a.next)
+  log('!a.next', !a.next)
+
 // parse single stmnt
 // `indent` arg is:
 //   == undefined by default
@@ -642,7 +729,9 @@ function parse_stmnt(s, a, indent) {
     a.t = nt.block
     a = a.lhs = {}
     parse_indent_block(s, a, line.indent)
-  } else if (op == BLOCK) {
+  } elif at_include(s)
+    do_include(s, a, indent)
+  else if (op == BLOCK) {
     //log('block')
     s.skip('{')
     a.t = nt.block
@@ -769,7 +858,9 @@ function parse_block(s, a) {
         //if (s.t.s == RB) break; // ) - for `for` ???????
         while (s.try_skip(';'));
         if (s.t == prev_tok) break;//throw s.error("parse_block looped");
-        assert(!a.next);
+        //assert(!a.next);
+        // include can create !a.next node, so skip it:
+        while (a.next) a = a.next
         if (s.t) a = a.next = {}
       }
     }
@@ -810,7 +901,8 @@ function set_links(pa, a, prev) {
   if (a.next) set_links(pa, a.next, a)
 }
 
-function parse(fn, str) {
+function parse(fn, str, opts) {
+  opts = merge({camelize: true}, opts)
   let toks = tokenize(fn, str)
   //dump_tokens(toks)
   toks = posttokenize(toks)
@@ -824,11 +916,12 @@ function parse(fn, str) {
   //log('eof tok',s.t)
   if (s.t) throw s.error('unparsed tokens in stream')
   set_links(null, ast)
+  if opts.camelize
+    camelize(ast)
   //dump_ast(ast)
   //log('-----------');log(unparse(ast)) //////////
   return ast
 }
-
 
 function dump_ast(a, d) {
   d = d || 0
@@ -992,6 +1085,30 @@ function dash_to_camel(id) {
     else
       return part
   }).join('')
+}
+
+function camelize(a) {
+  //log('camelize')
+
+  function camelize_str(s0) {
+    let s = dash_to_camel(s0)
+    //if (s != s0) log('camlize '+s0+' -> '+s)
+    return s
+  }
+
+  function cb(a) {
+    if (a.name) {
+      a.name = camelize_str(a.name)
+    }
+    if (a.t == tt.id) {
+
+      //a.s = parser.dash_to_camel(a.s)
+      a.s = camelize_str(a.s)
+
+    }
+  }
+
+  walk(a, cb)
 }
 
 // o - output stream

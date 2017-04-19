@@ -1,0 +1,7 @@
+#!/bin/bash
+echo '-------------------------------------------------'
+DIR="$(dirname "${BASH_SOURCE[0]}")"
+cd $DIR
+build.sh
+inotifywait -qq -e modify $0 *.ws build.sh build/*
+. $0

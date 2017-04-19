@@ -16,29 +16,26 @@ function merge(a, b) {
   Object.assign(x, b)
   return x
 }
-if (!('len' in String.prototype)) {  
-  Object.defineProperty(String.prototype, 'len', {  
-    get: function () {  
-      return this.length
-    }
-  })
-}
-if (!('len' in Array.prototype)) {  
-  Object.defineProperty(Array.prototype, 'len', {  
-    get: function () {  
-      return this.length
-    }
-  })
-}
+Object.defineProperty(String.prototype, 'len', {  
+  get: function () {  
+    return this.length
+  }
+})
+Object.defineProperty(Array.prototype, 'len', {  
+  get: function () {  
+    return this.length
+  }
+})
 Array.prototype.has = Array.prototype.includes
-if (!('first' in Array.prototype)) {  
+Array.prototype.len = Array.prototype.length
+if (!Array.prototype.first) {  
   Object.defineProperty(Array.prototype, 'first', {  
     get: function () {  
       return this[0]
     }
   })
 }
-if (!('last' in Array.prototype)) {  
+if (!Array.prototype.last) {  
   Object.defineProperty(Array.prototype, 'last', {  
     get: function () {  
       return this[this.length - 1]
@@ -48,6 +45,7 @@ if (!('last' in Array.prototype)) {
 String.prototype.starts = String.prototype.startsWith
 String.prototype.ends = String.prototype.endsWith
 String.prototype.has = String.prototype.includes
+String.prototype.len = String.prototype.length
 String.prototype.words = function () {  
   return this.split(' ')
 }
